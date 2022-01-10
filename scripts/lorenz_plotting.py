@@ -18,7 +18,6 @@ def plot_lorenz_basis(state_array_base_run):
 
     plt.figure(figsize=(20, 10))
 
-    plt.title('Basis Run')
     plt.subplot(131)
     plt.title('u vs v')
     plt.ylabel('v')
@@ -39,7 +38,7 @@ def plot_lorenz_basis(state_array_base_run):
     plt.savefig('figures/BasisRun.png')
 
 
-def plot_ensembles(settings):
+def plot_ensembles(u_df,v_df,w_df):
 
     for i in range(0, num_ens):
 
