@@ -3,7 +3,7 @@
 
 Particle Filter Class
 
-Core components of Particle Filter Algorithm, including the prediction and update steps
+Intended for solution of Lorenz System
 
 Scripting by Dave Casson, dave.casson@usask.ca
 
@@ -63,21 +63,21 @@ def resample(settings,state_array,weights):
     zweightcumul = np.cumsum(weights)
 
     #Generate a random seed / value, and divide by the number of ensembles
-    zrand = np.random.random() / num_ens
+    zrand = np.random.random() / settings['num_ens']
 
     #Loop through particles
-    for ires in range(0, num_ens):
+    for ires in range(0, settings['num_ens']):
         #If the value is lower than the first weight, assign it to the first index.
         if zrand <= zweightcumul[0]:
             resample[ires] = 1
 
         #Check where the seed falls within the array of weights, then assign an index.
-        for rk in range(1, num_ens):
+        for rk in range(1, settings['num_ens']):
             if (zweightcumul[rk - 1] < zrand) and (zrand <= zweightcumul[rk]):
                 resample[ires] = rk + 1
 
         #Increment the random seed forward, by 1 / num_ens
-        zrand += 1. / num_ens
+        zrand += 1. / settings['num_ens']
 
     #Index correction needed due to python indexing
     resample_index = resample - 1

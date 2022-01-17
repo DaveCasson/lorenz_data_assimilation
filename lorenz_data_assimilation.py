@@ -2,7 +2,7 @@
 
 Lorenz Data Assimilation
 
-Simple of the Lorenz equations and the application of data assimilation methods.py
+Simple solution of the Lorenz system in a deterministic and ensemble mode
 
 Scripted by dave.casson@usask.ca
 
@@ -11,12 +11,13 @@ Scripted by dave.casson@usask.ca
 
 import numpy as np
 import logging
-logging.basicConfig(level=logging.DEBUG)
+import matplotlib.pyplot as plt
+logging.basicConfig(level=logging.INFO)
 from scripts import utilities as utils
 from scripts import lorenz_plotting
 from scripts import lorenz_array_prep
 from scripts import particle_filter as pf
-
+from scripts import ensemble_kalman_filter as enkf
 
 def explicit_euler(quantity, flux, delta):
     """Use the explicit euler approximation to advance one timestep"""
@@ -125,10 +126,13 @@ def run_lorenz_ensemble(settings, rho_ens_array, psi_ens_array, beta_ens_array, 
         state_timestep_array = np.vstack([u_ens_array, v_ens_array, w_ens_array])
         state_derivative_array = np.vstack([du_ens_array, dv_ens_array, dw_ens_array])
 
-        state_result_array.append(state_timestep_array)
+
 
         if da_mode == 'pf':
             """Implement Particle Filter SIS or SIR algorithms. See the particle_filter.py for details"""
+            if i == 0:
+                logging.info('Running Particle Filter')
+
             likelihoods      = pf.calculate_likelihoods(settings, state_timestep_array,meas_array[i])
             weights          = pf.calculate_weights(likelihoods)
             state_estimate   = pf.calculate_state_estimate(state_timestep_array, weights)
@@ -136,12 +140,21 @@ def run_lorenz_ensemble(settings, rho_ens_array, psi_ens_array, beta_ens_array, 
             n_eff            = settings['n_eff'] * settings['num_ens']
 
             if settings['resample_option'] == True and n_eff < effective_weight:
-                state_array = resample(settings, state_array, weights)
+                if i == 0:
+                    logging.info('Particle Filter with resampling')
+                state_timestep_array = pf.resample(settings, state_timestep_array, weights)
+                state_estimate = pf.calculate_state_estimate(state_timestep_array, weights)
                 # Re-initialize weights for the next run
                 weights.fill(1.0 / settings['num_ens'])
 
-            # Save the state estimate
-            state_estimate_array.append(state_estimate)
+        if da_mode == 'enkf':
+            """Implement Ensemble Kalman Filter. See ensemble_kalman_filter.py for details"""
+            if i == 0:
+                logging.info('Running EnKF')
+            state_timestep_array, state_estimate = enkf.update_enkf(settings, state_timestep_array, meas_array[i])
+
+        state_estimate_array.append(state_estimate)
+        state_result_array.append(state_timestep_array)
 
     return state_result_array, state_estimate_array
 
@@ -163,8 +176,10 @@ if __name__ == '__main__':
                                       t_array, settings['delta_t'])
 
     logging.info('Plot 3D result')
-    lorenz_plotting.plot_3D_lorenz(settings,state_array_base_run)
-    lorenz_plotting.plot_lorenz_basis(state_array_base_run)
+    #lorenz_plotting.plot_3D_lorenz(settings,state_array_base_run)
+
+    logging.info('Plot variable comparison result')
+    #lorenz_plotting.plot_lorenz_basis(state_array_base_run)
 
     logging.info('Second performing modified model run, to be used as pseudo-measurements')
     state_array_mod_run = run_lorenz_deterministic(rho_mod_array, psi_mod_array, beta_mod_array,
@@ -174,16 +189,23 @@ if __name__ == '__main__':
     logging.info('Create ensemble of arrays, based on prescribed parameter variance')
     rho_ens_array, psi_ens_array, beta_ens_array = lorenz_array_prep.create_ens_arrays(settings)
 
+
     logging.info('Generating measurements at the desired frequency')
     meas_array = lorenz_array_prep.create_measurement_array(settings, state_array_base_run[0][:])
 
+    if settings['run_pf'] == True:
+        pf_ens_states, pf_est_states = run_lorenz_ensemble(settings, rho_ens_array, psi_ens_array, beta_ens_array,
+                                                                       t_array, da_mode = 'pf')
 
-    state_array_ens_run, state_estimate_ens_run = run_lorenz_ensemble(settings, rho_ens_array, psi_ens_array, beta_ens_array,
-                                                                   t_array, da_mode = 'pf')
+        lorenz_plotting.plot_da_result(settings,state_array_base_run,state_array_mod_run,meas_array,
+                                       pf_ens_states, pf_est_states,t_array,da_mode = 'pf')
 
-    lorenz_plotting.plot_da_result(settings,state_array_base_run,state_array_mod_run,meas_array,
-                                   state_array_ens_run, state_estimate_ens_run,t_array)
+    if settings['run_enkf'] == True:
+        enkf_ens_states, enkf_est_states = run_lorenz_ensemble(settings, rho_ens_array, psi_ens_array, beta_ens_array,
+                                                                       t_array, da_mode = 'enkf')
 
+        lorenz_plotting.plot_da_result(settings,state_array_base_run,state_array_mod_run,meas_array,
+                                       enkf_ens_states, enkf_est_states,t_array,da_mode = 'enkf')
 
 
 
