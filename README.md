@@ -4,7 +4,7 @@
 
 Data assimilation allows measurements of a system to be merged with models in order to improve simulations. While data assimilation can be applied to very complex systems, it can be demonstrated in more simple contexts. Synthetic test cases are often used to evaluate different methods.
 
-This repository contains simple data assimilation examples coded in Python based on the [Lorenz system](https://en.wikipedia.org/wiki/Lorenz_system). Specifically ensemble data assimilation methods such as the Particle Filter.
+This repository contains simple data assimilation examples coded in Python based on the [Lorenz system](https://en.wikipedia.org/wiki/Lorenz_system). Specifically ensemble data assimilation methods such as the Particle Filter and Ensemble Kalman Filter.
 
 ## Lorenz Equations
 
@@ -23,3 +23,7 @@ An "actual" model of the perfect system is then approximated by changing one of 
 ## Try it out for yourself
 
 Open the Jupyter Notebook to test for yourself the implementation of the Lorenz equation and the effect of different data assimilation algorithms.
+
+## Acknowledgement
+
+I gained most understanding of filters, and adapted functions developed in [rlabbe's excellent resources on Filtering in Python](https://github.com/rlabbe/Kalman-and-Bayesian-Filters-in-Python). Certainly an excellent source on the these topics. 
